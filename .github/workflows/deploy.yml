@@ -1,8 +1,12 @@
 name: Build, Test, and Deploy to GitHub Pages
+# workflow 是從整個 GitHub repo 的根目錄執行的
 
 on:
+  # 我們加上 paths 限制，使得 workflow 僅在特定子專案變動時觸發
   push:
     branches: ["main"]
+    paths:
+      - 'cicd-gitpage-demo/**'  # 僅當此資料夾變動才觸發
   workflow_dispatch:
 
 permissions:
@@ -33,7 +37,9 @@ jobs:
       # Install dependencies
       # 執行 npm ci 會根據 package-lock.json 安裝精確版本的套件，比 npm install 更適合 CI 環境
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd cicd-gitpage-demo
+          npm ci
 
       # =========================================
       # ========== CI (品質檢查) 步驟開始 ==========
@@ -43,13 +49,17 @@ jobs:
       # 執行在 package.json 中定義的 "lint" 指令
       # 如果 lint 檢查不通過，這個步驟會失敗，整個 workflow 會中止
       - name: Run Linter
-        run: npm run lint
+        run: |
+          cd cicd-gitpage-demo
+          npm run lint
 
       # Run Unit Test
       # 執行在 package.json 中定義的 test 指令
       # 如果有任何一個測試案例失敗，這個步驟也會失敗，workflow 同樣會中止
       - name: Run Unit Test
-        run: npm test
+        run: |
+          cd cicd-gitpage-demo
+          npm test
 
       # =========================================
       # ========== CI (品質檢查) 步驟結束 ==========
