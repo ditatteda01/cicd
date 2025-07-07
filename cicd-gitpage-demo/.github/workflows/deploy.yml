@@ -1,0 +1,73 @@
+name: Build, Test, and Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Set up environment for Node.js
+      # Linter 和測試工具通常是 Node.js 套件
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'  # 保存 npm 快取，加快安裝速度
+
+      # Install dependencies
+      # 執行 npm ci 會根據 package-lock.json 安裝精確版本的套件，比 npm install 更適合 CI 環境
+      - name: Install dependencies
+        run: npm ci
+
+      # =========================================
+      # ========== CI (品質檢查) 步驟開始 ==========
+      # =========================================
+
+      # Linter Check
+      # 執行在 package.json 中定義的 "lint" 指令
+      # 如果 lint 檢查不通過，這個步驟會失敗，整個 workflow 會中止
+      - name: Run Linter
+        run: npm run lint
+
+      # Run Unit Test
+      # 執行在 package.json 中定義的 test 指令
+      # 如果有任何一個測試案例失敗，這個步驟也會失敗，workflow 同樣會中止
+      - name: Run Unit Test
+        run: npm test
+
+      # =========================================
+      # ========== CI (品質檢查) 步驟結束 ==========
+      # =========================================
+
+      # 如果上面步驟通過，才會開始執行下面的部署流程
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 注意：如果專案有建制步驟（例如 React/Vue 的 npm run build）
+      # 產生的檔案會在一個特定的資料夾（如 build 或 dist）
+      # 這時 path 就需要指向那個資料夾，例如 path: './build'
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      
