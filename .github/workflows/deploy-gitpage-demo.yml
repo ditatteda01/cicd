@@ -79,7 +79,7 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 注意：這邊的 actions 因為預設為從倉庫的根目錄開始尋找檔案
+      # 注意：因為 actions 預設為從倉庫的根目錄開始尋找檔案
       # 而我們的檔案 index.html 是位在 ./cicd-gitpage-demo/ 下的
       # 因此需要額外對路徑進行指定
       - name: Upload artifact
