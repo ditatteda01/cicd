@@ -18,9 +18,14 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    # 在這邊指定工作目錄
+    defaults:
+      run:
+        working-directory: ./cicd-gitpage-demo
+
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout repository
@@ -33,13 +38,13 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'  # 保存 npm 快取，加快安裝速度
+          # 雖然有設定工作目錄，不過為了快取穩定性，仍然建議保留此行
+          cache-dependency-path: cicd-gitpage-demo/package-lock.json
 
       # Install dependencies
       # 執行 npm ci 會根據 package-lock.json 安裝精確版本的套件，比 npm install 更適合 CI 環境
       - name: Install dependencies
-        run: |
-          cd cicd-gitpage-demo
-          npm ci
+        run: npm ci
 
       # =========================================
       # ========== CI (品質檢查) 步驟開始 ==========
@@ -49,17 +54,13 @@ jobs:
       # 執行在 package.json 中定義的 "lint" 指令
       # 如果 lint 檢查不通過，這個步驟會失敗，整個 workflow 會中止
       - name: Run Linter
-        run: |
-          cd cicd-gitpage-demo
-          npm run lint
+        run: npm run lint
 
       # Run Unit Test
       # 執行在 package.json 中定義的 test 指令
       # 如果有任何一個測試案例失敗，這個步驟也會失敗，workflow 同樣會中止
       - name: Run Unit Test
-        run: |
-          cd cicd-gitpage-demo
-          npm test
+        run: npm test
 
       # =========================================
       # ========== CI (品質檢查) 步驟結束 ==========
@@ -75,9 +76,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './cicd-gitpage-demo'
+          path: '.'
 
       - name: Deploy to GitHub Pages
-        id: deployment
+        id: deployment  # 這個 id 需要和 environment.url 中的 steps.deployment.outputs.page_url 一致
         uses: actions/deploy-pages@v4
       
