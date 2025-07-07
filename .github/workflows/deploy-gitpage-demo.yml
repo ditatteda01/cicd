@@ -76,7 +76,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: './cicd-gitpage-demo'
 
       - name: Deploy to GitHub Pages
         id: deployment  # 這個 id 需要和 environment.url 中的 steps.deployment.outputs.page_url 一致
