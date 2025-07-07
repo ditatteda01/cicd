@@ -18,7 +18,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    # 在這邊指定工作目錄
+    # 在這邊指定工作目錄，注意這邊只會改變使用到 run 關鍵字的腳本命令
     defaults:
       run:
         working-directory: ./cicd-gitpage-demo
@@ -28,21 +28,30 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      # 每個 action 都是彼此獨立的，他們都預設從 GitHub 倉庫的根目錄開始查找檔案和路徑
+      # 因此這個 checkout 會從整個 repository 抓取資料並複製到 Runner 的根目錄
+      # 此處不應該加上 with.path: './cicd-gitpage-demo'，因為這樣做會把 repo 的資料複製到 Runner 的根目錄，而這不是我們所期望的
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ====================================================================================
+      # ====== Checkout 完成後，以下都是在 GitHub Actions workflow 提供的 Runner 環境中執行 ======
+      # ====================================================================================
+
       # Set up environment for Node.js
-      # Linter 和測試工具通常是 Node.js 套件
+      # actions 是從根目錄開始查找檔案，會尋找根目錄下的 package-lock.json 檔
+      # 不過我們的 package-lock.json 檔案位置在 ./cicd-gitpage-demo/ 底下，因此我們要額外設定路徑
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'  # 保存 npm 快取，加快安裝速度
-          # 雖然有設定工作目錄，不過為了快取穩定性，仍然建議保留此行
+          # 必須指定 package-lock.json 檔案路徑
           cache-dependency-path: cicd-gitpage-demo/package-lock.json
 
       # Install dependencies
       # 執行 npm ci 會根據 package-lock.json 安裝精確版本的套件，比 npm install 更適合 CI 環境
+      # 底下的 run 會沿用之前設定好的工作目錄，也就是 ./cicd-gitpage-demo
       - name: Install dependencies
         run: npm ci
 
@@ -70,13 +79,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 注意：如果專案有建制步驟（例如 React/Vue 的 npm run build）
-      # 產生的檔案會在一個特定的資料夾（如 build 或 dist）
-      # 這時 path 就需要指向那個資料夾，例如 path: './build'
+      # 注意：這邊的 actions 因為預設為從倉庫的根目錄開始尋找檔案
+      # 而我們的檔案 index.html 是位在 ./cicd-gitpage-demo/ 下的
+      # 因此需要額外對路徑進行指定
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './cicd-gitpage-demo'
+          path: './cicd-gitpage-demo'   # 必須特別指定
 
       - name: Deploy to GitHub Pages
         id: deployment  # 這個 id 需要和 environment.url 中的 steps.deployment.outputs.page_url 一致
